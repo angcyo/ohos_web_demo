@@ -4,7 +4,7 @@ import WebComponent from '../components/WebComponent';
 @Entry
 @Component
 struct Index {
-  @State message: string = 'Hello World ohos_web_demo';
+  @State userAgent: string = '';
 
   build() {
     /*RelativeContainer() {
@@ -21,10 +21,14 @@ struct Index {
         })
     }*/
     RelativeContainer() {
-      WebComponent()
+      WebComponent({ url: 'https://www.baidu.com', currentUserAgent: this.userAgent!! })
         .height('100%')
         .width('100%')
-      Text(this.message)
+      Text(this.userAgent)
+        .alignRules({
+          bottom: { anchor: "__container__", align: VerticalAlign.Bottom },
+          right: { anchor: "__container__", align: HorizontalAlign.End }
+        })
     }
     .height('100%').width('100%')
     .borderWidth(1).borderColor(Color.Red)

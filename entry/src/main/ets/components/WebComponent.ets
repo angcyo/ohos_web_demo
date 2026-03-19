@@ -18,7 +18,8 @@ import { webview } from '@kit.ArkWeb';
  *       {
  *         "name": "ohos.permission.INTERNET"
  *       }
- *   ]
+ *     ]
+ *   }
  * }
  * ```
  *
@@ -30,24 +31,50 @@ import { webview } from '@kit.ArkWeb';
  *
  * https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-page-custom-components-lifecycle
  *
+ * # 组件状态
+ * @see Component
+ * @see State 组件内状态 https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-state
+ * @see Prop 父子单向同步 https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-prop
+ * @see Link 父子双向同步 https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-link
+ * @see Track class对象属性级更新 https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-track
+ *
+ * @see ComponentV2
+ * @see Local 组件内部状态 https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-new-local
+ * @see Param 组件外部输入 https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-new-param
+ * @see Once 初始化同步一次 https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-new-once
+ * @see Event 规范组件输出 https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-new-event
+ *
+ * # !!语法：双向绑定
+ *
+ * https://developer.huawei.com/consumer/cn/doc/harmonyos-guides/arkts-new-binding
  */
-@Component
+@ComponentV2
 struct WebComponent {
+  /**
+   * 需要加载的网页
+   * */
+  @Param url: string = 'about:blank';
   /**
    * @see webview.WebviewController.getUserAgent
    * @see webview.WebviewController.setAppCustomUserAgent
    * @see webview.WebviewController.setCustomUserAgent
    * @see webview.WebviewController.setRenderProcessMode
    * */
-  controller: webview.WebviewController = new webview.WebviewController();
+  @Param controller: webview.WebviewController = new webview.WebviewController();
   /**
    * 三方应用相关信息标识
    * */
-  @State customUserAgent: string = ' angcyo';
+  @Param customUserAgent: string = ' angcyo';
+  /**
+   * 当前的`UserAgent`, 支持双向绑定.
+   * */
+  @Param currentUserAgent: string = '';
+  @Event $currentUserAgent: (val: string) => void = (val: string) => {
+  };
   /**
    * 调试标签
    * */
-  debugLabel: string = "[WebComponent]";
+  @Param debugLabel: string = "[WebComponent]";
 
   //MARK: - Component组件生命周期开始
 
@@ -59,12 +86,13 @@ struct WebComponent {
 
   //2.
   build() {
-    Web({ src: 'www.baidu.com', controller: this.controller })
+    Web({ src: this.url, controller: this.controller })
     //MARK: - Web生命周期开始
     //1.
       .onControllerAttached(() => {
         try {
           let userAgent = this.controller.getUserAgent() + this.customUserAgent;
+          this.$currentUserAgent(userAgent);
           // Mozilla/5.0 (PC; OpenHarmony 6.0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36  ArkWeb/6.0.0.130 angcyo
           console.info(this.debugLabel + "onControllerAttached:" + userAgent);
           this.controller.setCustomUserAgent(userAgent);
@@ -86,6 +114,11 @@ struct WebComponent {
         return false;
       })
       //3.
+      /**
+       * @see this.responseWeb.setResponseData
+       * @see this.responseWeb.setResponseCode
+       * @see this.responseWeb.setReasonMessage
+       * */
       .onInterceptRequest((event) => {
         console.info(this.debugLabel + 'onInterceptRequest url:' + event.request.getRequestUrl());
         // 不拦截
@@ -105,9 +138,16 @@ struct WebComponent {
       })
       //6.
       .onPageEnd((event) => {
-        // 推荐在此事件中执行JavaScript脚本
+        // 页面加载完成, 整体进度100%. 推荐在此事件中执行JavaScript脚本
         if (event) {
-          console.info(this.debugLabel + 'onPageEnd url:' + event.url);
+          try {
+            console.info(this.debugLabel + 'onPageEnd url:' + event.url
+              + " pageHeight:" + this.controller.getPageHeight()
+              + " pageOffset:" + this.controller.getPageOffset());
+          } catch (error) {
+            console.error(this.debugLabel +
+              `ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
+          }
         }
       })
       //MARK: - Web生命周期结束
@@ -116,7 +156,8 @@ struct WebComponent {
         console.info(this.debugLabel + 'onPageVisible url:' + event.url);
       })
       .onOverrideUrlLoading((webResourceRequest: WebResourceRequest) => {
-        console.info(this.debugLabel + 'onOverrideUrlLoading:' + webResourceRequest.getRequestUrl());
+        //当用户点击<a>标签,  window.location.href = '...' 或 window.open()。 时触发.
+        console.info(this.debugLabel + 'onOverrideUrlLoading');
         if (webResourceRequest && webResourceRequest.getRequestUrl() == "about:blank") {
           return true;
         }
