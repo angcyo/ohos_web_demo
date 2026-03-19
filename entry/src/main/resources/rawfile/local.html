@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+  <body>
+    <p>
+      <input type="text" id="input" value="发送的消息~">
+    </p>
+    <p>
+      <button id="nativeCallButton">原生调用</button>
+      <button id="jsBridgeCallButton">JSBridge调用</button>
+    </p>
+    <div id="text">This is some message.</div>
+
+    <script>
+      const input = document.getElementById("input")
+      const text = document.getElementById("text")
+      const nativeCallButton = document.getElementById("nativeCallButton")
+      const jsBridgeCallButton = document.getElementById("jsBridgeCallButton")
+
+      nativeCallButton.addEventListener('click', function () {
+        if (typeof jsbObj !== 'undefined') {
+          jsbObj.testJSCall(input.value)
+        } else {
+          console.info("jsbObj is error!")
+          changeWebMessage("jsbObj is error!")
+        }
+      })
+
+      jsBridgeCallButton.addEventListener('click', function () {
+        // 通过 jsbridge.call('xxx', xxx) 调用 ArkTS 函数
+        if (typeof jsbridge !== 'undefined') {
+          jsbridge.call('testJSCall', input.value)
+        } else {
+          console.info("jsbridge is error!")
+          changeWebMessage("jsbridge is error!")
+        }
+      })
+
+      function changeWebMessage(str) {
+        text.innerHTML = str
+      }
+
+      // 通过原生调用的测试方法
+      function testNativeCall(str) {
+        changeWebMessage(str)
+      }
+    </script>
+  </body>
+</html>

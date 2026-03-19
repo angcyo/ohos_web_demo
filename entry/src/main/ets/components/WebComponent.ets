@@ -1,4 +1,5 @@
 import { webview } from '@kit.ArkWeb';
+import JSBridge from './ArkWebJSBridge';
 
 /**
  * Email:angcyo@126.com
@@ -51,9 +52,9 @@ import { webview } from '@kit.ArkWeb';
 @ComponentV2
 struct WebComponent {
   /**
-   * 需要加载的网页
+   * 需要加载的网页,或者资源 `$rawfile("local.html")`
    * */
-  @Param url: string = 'about:blank';
+  @Param src: string | Resource | undefined = 'about:blank';
   /**
    * @see webview.WebviewController.getUserAgent
    * @see webview.WebviewController.setAppCustomUserAgent
@@ -75,6 +76,41 @@ struct WebComponent {
    * 调试标签
    * */
   @Param debugLabel: string = "[WebComponent]";
+  //MARK: - JSBridge
+
+  isReady: boolean = false;
+  // 创建 JSBridge 实例
+  jsbridge: JSBridge = new JSBridge(this.controller)
+  /**外部注册`JSBridge`的回调方法*/
+  @Param onInitJSBridge: (controller: webview.WebviewController, jsbridge: JSBridge) => void =
+    (controller, jsbridge: JSBridge) => {
+    };
+
+  /**初始化JSBridge*/
+  initJSBridge(): void {
+    if (!this.isReady) {
+      // 在 controller 与 web 关联后才能进行 bridge 的初始化
+      this.jsbridge.initBridge();
+      // 添加支持的方法
+      this.onInitJSBridge(this.controller, this.jsbridge);
+      //this.jsbridge.register({ 'changeNativeMessage': this.changeNativeMessage });
+      this.isReady = true;
+    }
+  }
+
+  /**销毁JSBridge*/
+  removeJSBridge(): void {
+    try {
+      this.jsbridge.removeBridge();
+    } catch (error) {
+      console.log(error.message);
+    }
+  }
+
+  /*// 一个本地 ArkTS 函数
+  changeNativeMessage = (message: string) => {
+    //this.message = message;
+  }*/
 
   //MARK: - Component组件生命周期开始
 
@@ -86,9 +122,10 @@ struct WebComponent {
 
   //2.
   build() {
-    Web({ src: this.url, controller: this.controller })
-    //MARK: - Web生命周期开始
-    //1.
+    Web({ src: this.src, controller: this.controller })
+      .javaScriptAccess(true)
+      //MARK: - Web生命周期开始
+      //1.
       .onControllerAttached(() => {
         try {
           let userAgent = this.controller.getUserAgent() + this.customUserAgent;
@@ -100,6 +137,7 @@ struct WebComponent {
           console.error(this.debugLabel +
             `ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
         }
+        this.initJSBridge();
       })
       //2.
       .onLoadIntercept((event) => {
@@ -180,6 +218,7 @@ struct WebComponent {
       .onDisAppear(() => {
         // 销毁时触发.
         console.info(this.debugLabel + 'onDisAppear');
+        this.removeJSBridge();
         /*this.getUIContext().getPromptAction().showToast({
           message: 'The web is hidden',
           duration: 2000
