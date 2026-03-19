@@ -18,7 +18,7 @@ class TestClass {
     this.uiContext = uiContext;
   }
 
-  testJSCall(message: string): void {
+  async testJSCall(message: string): Promise<void> {
     console.info("message->" + message);
     try {
       this.uiContext.getPromptAction().showToast({
@@ -30,7 +30,11 @@ class TestClass {
     } catch (error) {
       console.error(error);
     }
-    this.controller.runJavaScript(`testNativeCall("native [${message}] >> ${Date.now()}")`);
+    try {
+      await this.controller.runJavaScript(`testNativeCall("native [${message}] >> ${Date.now()}")`);
+    } catch (error) {
+      console.error(error);
+    }
   }
 }
 
@@ -42,26 +46,23 @@ struct Index {
   jsbridge: JSBridge | undefined = undefined;
 
   build() {
-    /*RelativeContainer() {
-      Text(this.message)
-        .id('HelloWorld')
-        .fontSize($r('app.float.page_text_font_size'))
-        .fontWeight(FontWeight.Bold)
-        .alignRules({
-          center: { anchor: '__container__', align: VerticalAlign.Center },
-          middle: { anchor: '__container__', align: HorizontalAlign.Center }
-        })
-        .onClick(() => {
-          this.message = 'Welcome';
-        })
-    }*/
     RelativeContainer() {
       WebComponent({
-        src: $rawfile("local.html") /*'https://www.baidu.com'*/,
+        src: $rawfile("local.html"),
         currentUserAgent: this.userAgent!!,
         onInitJSBridge: (controller, jsbridge) => {
           this.jsbridge = jsbridge;
           jsbridge.register({ 'testJSCall': this.testJSCall });
+          jsbridge.register({
+            'loadBaidu': () => {
+
+              try {
+                controller.loadUrl('https://www.baidu.com');
+              } catch (error) {
+                console.error(error);
+              }
+            }
+          });
           try {
             controller.registerJavaScriptProxy(new TestClass(controller, this.getUIContext()), "jsbObj",
               ["testJSCall"]);
@@ -70,8 +71,6 @@ struct Index {
           }
         }
       })
-        .height('100%')
-        .width('100%')
       Text(this.userAgent)
         .alignRules({
           bottom: { anchor: "__container__", align: VerticalAlign.Bottom },

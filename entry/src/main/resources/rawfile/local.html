@@ -7,6 +7,7 @@
     <p>
       <button id="nativeCallButton">原生调用</button>
       <button id="jsBridgeCallButton">JSBridge调用</button>
+      <button id="loadBaidu">加载百度</button>
     </p>
     <div id="text">This is some message.</div>
 
@@ -15,6 +16,7 @@
       const text = document.getElementById("text")
       const nativeCallButton = document.getElementById("nativeCallButton")
       const jsBridgeCallButton = document.getElementById("jsBridgeCallButton")
+      const loadBaidu = document.getElementById("loadBaidu")
 
       nativeCallButton.addEventListener('click', function () {
         if (typeof jsbObj !== 'undefined') {
@@ -29,6 +31,16 @@
         // 通过 jsbridge.call('xxx', xxx) 调用 ArkTS 函数
         if (typeof jsbridge !== 'undefined') {
           jsbridge.call('testJSCall', input.value)
+        } else {
+          console.info("jsbridge is error!")
+          changeWebMessage("jsbridge is error!")
+        }
+      })
+
+      // 通过 jsbridge.call('xxx', xxx) 调用 ArkTS 函数
+      loadBaidu.addEventListener('click', function () {
+        if (typeof jsbridge !== 'undefined') {
+          jsbridge.call('loadBaidu')
         } else {
           console.info("jsbridge is error!")
           changeWebMessage("jsbridge is error!")
