@@ -1,10 +1,13 @@
+import WebComponent from '../components/WebComponent';
+
+
 @Entry
 @Component
 struct Index {
   @State message: string = 'Hello World ohos_web_demo';
 
   build() {
-    RelativeContainer() {
+    /*RelativeContainer() {
       Text(this.message)
         .id('HelloWorld')
         .fontSize($r('app.float.page_text_font_size'))
@@ -16,8 +19,14 @@ struct Index {
         .onClick(() => {
           this.message = 'Welcome';
         })
+    }*/
+    RelativeContainer() {
+      WebComponent()
+        .height('100%')
+        .width('100%')
+      Text(this.message)
     }
-    .height('100%')
-    .width('100%')
+    .height('100%').width('100%')
+    .borderWidth(1).borderColor(Color.Red)
   }
 }
