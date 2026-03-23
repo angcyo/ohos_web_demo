@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# 安装wasm-pack
+# https://developer.mozilla.org/zh-CN/docs/WebAssembly/Guides/Rust_to_Wasm
+# https://rustwasm.github.io/docs/wasm-pack/introduction.html
+# cargo install wasm-pack
+
+# 定义变量
+OUTPUT_DIR=".output/pkg"
+
+rm -rf $OUTPUT_DIR
+# https://rustwasm.github.io/docs/wasm-pack/commands/build.html
+wasm-pack build --out-dir $OUTPUT_DIR --release --target web --scope angcyo
+#cp -r $OUTPUT_DIR web-toolkit/tests
+
+# 包发布到 npm
+# https://developer.mozilla.org/zh-CN/docs/WebAssembly/Guides/Rust_to_Wasm#%E6%8A%8A%E6%88%91%E4%BB%AC%E7%9A%84%E5%8C%85%E5%8F%91%E5%B8%83%E5%88%B0_npm
+# shellcheck disable=SC2164
+# cd $OUTPUT_DIR
+# npm publish --registry http://192.168.51.203:4873/
