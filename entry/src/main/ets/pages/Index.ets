@@ -2,6 +2,7 @@ import JSBridge, { SupportTypes } from '../components/ArkWebJSBridge';
 import WebComponent from '../components/WebComponent';
 import { promptAction } from '@kit.ArkUI';
 import { webview } from '@kit.ArkWeb';
+import RawfileServer from '../components/RawfileServer';
 
 /**
  * Email:angcyo@126.com
@@ -45,10 +46,15 @@ struct Index {
   //延迟初始化
   jsbridge: JSBridge | undefined = undefined;
 
+  aboutToAppear(): void {
+    new RawfileServer(this.getUIContext().getHostContext()!.resourceManager).startHttpServer();
+  }
+
   build() {
     RelativeContainer() {
       WebComponent({
-        src: $rawfile("local.html"),
+        //src: $rawfile("local.html"),
+        src: "http://localhost:6088",
         currentUserAgent: this.userAgent!!,
         onInitJSBridge: (controller, jsbridge) => {
           this.jsbridge = jsbridge;

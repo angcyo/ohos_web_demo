@@ -124,6 +124,9 @@ struct WebComponent {
   build() {
     Web({ src: this.src, controller: this.controller })
       .javaScriptAccess(true)
+      .fileAccess(true)
+      .domStorageAccess(true)
+      .mixedMode(MixedMode.All)
       //MARK: - Web生命周期开始
       //1.
       .onControllerAttached(() => {
@@ -142,8 +145,8 @@ struct WebComponent {
       //2.
       .onLoadIntercept((event) => {
         if (event) {
-          console.info(this.debugLabel + 'onLoadIntercept url:' + event.data.getRequestUrl())
-          console.debug(this.debugLabel + ' url:' + event.data.getRequestUrl())
+          console.info(this.debugLabel + 'onLoadIntercept url->' + event.data.getRequestUrl())
+          console.debug(this.debugLabel + ' url->' + event.data.getRequestUrl())
           console.debug(this.debugLabel + ' isMainFrame:' + event.data.isMainFrame())
           console.debug(this.debugLabel + ' isRedirect:' + event.data.isRedirect())
           console.debug(this.debugLabel + ' isRequestGesture:' + event.data.isRequestGesture())
@@ -158,14 +161,52 @@ struct WebComponent {
        * @see this.responseWeb.setReasonMessage
        * */
       .onInterceptRequest((event) => {
-        console.info(this.debugLabel + 'onInterceptRequest url:' + event.request.getRequestUrl());
+        if (!event) {
+          return null;
+        }
+        const url = event.request.getRequestUrl();
+        console.info(this.debugLabel + 'onInterceptRequest url->' + url);
+
+        //resource://rawfile/local.html
+        //resource://rawfile/pkg/rust_hello_wasm.js
+        const rawfileFlag = 'resource://rawfile/';
+        if (url.startsWith(rawfileFlag)) {
+          const fileName = url.replace(rawfileFlag, '');
+
+          // 1. 从 rawfile 读取二进制数据
+          try {
+            const rawFileData = this.getUIContext().getHostContext()?.resourceManager.getRawFileContentSync(fileName);
+            // 2. 根据后缀名手动设置 MIME 类型（解决 Wasm/Module 关键点）
+            let mimeType = 'text/html';
+            if (url.endsWith('.js')) {
+              mimeType = 'application/javascript';
+            } else if (url.endsWith('.wasm')) {
+              mimeType = 'application/wasm';
+            }
+
+            // 3. 构造响应，手动注入允许跨域的 Header
+            let response = new WebResourceResponse();
+            response.setResponseData(rawFileData?.buffer);
+            response.setResponseEncoding('utf-8');
+            response.setResponseMimeType(mimeType);
+            response.setResponseCode(200);
+            response.setReasonMessage('OK');
+            response.setResponseHeader([
+              { headerKey: 'Access-Control-Allow-Origin', headerValue: '*' }
+            ]);
+            return response;
+          } catch (error) {
+            console.error(this.debugLabel +
+              `ErrorCode: ${(error as BusinessError).code},  Message: ${(error as BusinessError).message}`);
+          }
+        }
         // 不拦截
         return null;
       })
       //4.
       .onPageBegin((event) => {
         if (event) {
-          console.info(this.debugLabel + 'onPageBegin url:' + event.url);
+          console.info(this.debugLabel + 'onPageBegin url->' + event.url);
         }
       })
       //5.
@@ -179,7 +220,7 @@ struct WebComponent {
         // 页面加载完成, 整体进度100%. 推荐在此事件中执行JavaScript脚本
         if (event) {
           try {
-            console.info(this.debugLabel + 'onPageEnd url:' + event.url
+            console.info(this.debugLabel + 'onPageEnd url->' + event.url
               + " pageHeight:" + this.controller.getPageHeight()
               + " pageOffset:" + this.controller.getPageOffset());
           } catch (error) {
@@ -191,7 +232,7 @@ struct WebComponent {
       //MARK: - Web生命周期结束
       .onPageVisible((event) => {
         // 页面可见, 此时进度不一定100%
-        console.info(this.debugLabel + 'onPageVisible url:' + event.url);
+        console.info(this.debugLabel + 'onPageVisible url->' + event.url);
       })
       .onOverrideUrlLoading((webResourceRequest: WebResourceRequest) => {
         //当用户点击<a>标签,  window.location.href = '...' 或 window.open()。 时触发.

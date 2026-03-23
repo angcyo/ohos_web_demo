@@ -1,5 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="cn">
+  <head>
+    <meta charset="UTF-8">
+    <title>Local</title>
+  </head>
   <body>
     <p>
       <input type="text" id="input" value="发送的消息~">
@@ -10,6 +14,8 @@
       <button id="loadBaidu">加载百度</button>
     </p>
     <div id="text">This is some message.</div>
+    <div>Wasm Result↓</div>
+    <div id="textWasm"></div>
 
     <script>
       const input = document.getElementById("input")
@@ -55,6 +61,72 @@
       function testNativeCall(str) {
         changeWebMessage(str)
       }
+    </script>
+
+    <!--<script>
+      // 1. 定义加载函数
+      async function loadWasm() {
+        try {
+          // 使用流式加载 API
+          // 参数 1: fetch 请求对象
+          // 参数 2: 导入对象（传递 JS 函数或变量给 Wasm）
+          const {instance, module} = await WebAssembly.instantiateStreaming(
+            fetch('pkg/rust_hello_wasm_bg.wasm')/*,
+            {
+              env: {
+                sayHello: () => console.log("Hello from JS!")
+              }
+            }*/
+          )
+          // 2. 调用 Wasm 导出的函数
+          const textWasm = document.getElementById("textWasm")
+          textWasm.innerHTML = "test_bool->" + instance.exports.test_bool(true) + "<br>" +
+            "test_int->" + instance.exports.test_int(1) + "<br>" +
+            "test_double->" + instance.exports.test_double(20) + "<br>" +
+            "test_str->" + instance.exports.test_str("str") + "<br>" +
+            "test_string->" + instance.exports.test_string("string") + "<br>" +
+            "test_bytes->" + instance.exports.test_bytes(new Uint8Array([1, 2, 3])) + "<br>" +
+            /*"test_buffer->" + test_buffer([1, 2, 3], 3) + "<br>" +*/
+            "test_box->" + instance.exports.test_box(["b", "o", "x", 1, 2, 3]) + "<br>"
+        } catch (obj) {
+          console.error("加载 Wasm 失败:", obj)
+        }
+      }
+
+      loadWasm()
+    </script>-->
+
+    <!--Wasm-->
+    <script type="module">
+      // 导入 wasm-pack 生成的胶水代码
+      import init, {
+        test_bool,
+        test_int,
+        test_double,
+        test_str,
+        test_string,
+        test_bytes,
+        test_buffer,
+        test_box
+      } from './pkg/rust_hello_wasm.js'
+
+      async function start() {
+        // 初始化 Wasm 模块
+        await init()
+
+        // 直接像 JS 函数一样使用
+        const textWasm = document.getElementById("textWasm")
+        textWasm.innerHTML = "test_bool->" + test_bool(true) + "<br>" +
+          "test_int->" + test_int(10) + "<br>" +
+          "test_double->" + test_double(20) + "<br>" +
+          "test_str->" + test_str("str") + "<br>" +
+          "test_string->" + test_string("string") + "<br>" +
+          "test_bytes->" + test_bytes(new Uint8Array([1, 2, 3])) + "<br>" +
+          /*"test_buffer->" + test_buffer([1, 2, 3], 3) + "<br>" +*/
+          "test_box->" + test_box(["b", "o", "x", 1, 2, 3]) + "<br>"
+      }
+
+      start()
     </script>
   </body>
 </html>
